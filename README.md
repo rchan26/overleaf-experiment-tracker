@@ -45,6 +45,27 @@ projects/<name>/                one report per directory, each its own git
 
 4. **Check**: `overleaf doctor <any project URL>`.
 
+### Inside another repository
+
+To keep reports next to the code they describe, clone this repo into another repository's working tree, such as a monorepo, and hide it from that repository:
+
+```sh
+cd path/to/monorepo
+git clone git@github.com:rchan26/overleaf-experiment-tracker.git overleaf
+echo "/overleaf/" >> .git/info/exclude
+ln -s "$PWD/overleaf/bin/overleaf" ~/.local/bin/overleaf
+```
+
+- This is a plain nested clone, not a submodule, so the outer repository records nothing about it.
+- Excluding the folder stops the outer repository listing it as untracked, and stops `git add -A` there from adding it as an embedded repository.
+- `.git/info/exclude` only applies to your own clone, so the outer repository's committed `.gitignore` stays unchanged.
+  If everyone on the team uses this layout, add `/overleaf/` to that `.gitignore` instead.
+- There are three levels of git repository: the outer repository, this one, and one Overleaf clone per project under `overleaf/projects/`.
+  Git acts on the innermost repository containing the current directory, so from the outer repository's root, use `git -C overleaf ...` for this one.
+- `overleaf` commands take project names, so they work from anywhere, e.g. `overleaf build my-experiment` from the outer repository's root.
+- Update the tool with `git -C overleaf pull`.
+- `git clean -fdx` in the outer repository leaves the nested clone alone, but a doubled force (`git clean -ffdx`) deletes it, along with any reports not yet pushed to Overleaf.
+
 ## Workflow
 
 ```sh
