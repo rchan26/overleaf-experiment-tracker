@@ -101,6 +101,7 @@ ln -s "$PWD/overleaf/bin/overleaf" ~/.local/bin/overleaf
   It builds the report and checks your token, then runs `overleaf create`, which opens the new Overleaf project in your browser.
   Once you paste the project's URL back into the chat, it runs `overleaf link` so that `pull` and `push` work.
   If the report is already on Overleaf, it just gives you the URL.
+  If the report is too large to create in one go, it creates the project from the text files alone and pushes the figures once it is linked (see [Large reports](#large-reports)).
 
 Claude Code looks for project skills in `.claude/skills/` at the root of the repository you run it in.
 Install the setup skill there by hand, and it installs the other skills next to itself.
@@ -152,6 +153,27 @@ Notes:
 - To match `build`, keep the Overleaf compiler at pdfLaTeX (Menu > Compiler).
   `create` sets that already.
 
+### Large reports
+
+`create` sends the whole project, zipped, inside one browser request, and Overleaf rejects a request that is too large with "Something went wrong, sorry. There was a problem with your request."
+Overleaf does not document the limit.
+A report whose zip was 12.5 MB, almost all of it PNG figures, was rejected, while the same report's text files alone (36 KB) were accepted.
+Git has no such limit, so create the project from the text files, then push the rest:
+
+```sh
+seed=$(mktemp -d)/my-experiment
+rsync -am --exclude build/ --exclude .git/ --include '*/' \
+  --include '*.tex' --include '*.cls' --include '*.sty' --include '*.bib' --include '*.bst' \
+  --exclude '*' projects/my-experiment/ "$seed"/
+overleaf create "$seed"                      # opens the new project; it will not compile yet
+overleaf link my-experiment <project URL>    # link the real report, not the copy
+overleaf status my-experiment                # lists the figures as the only local changes
+overleaf push my-experiment "add figures"
+```
+
+`link` adopts the project's history, so the report's own files match it and only the figures are left to push.
+Ignore the `link` command that `create` prints, which names the temporary copy.
+
 ## How it talks to Overleaf
 
 Overleaf has no general REST API.
@@ -160,12 +182,14 @@ Overleaf has no general REST API.
 - **Creating a project**: the "Open in Overleaf" endpoint (<https://www.overleaf.com/devs>).
   `create` zips a directory, and opens a browser tab that posts the zip to `https://www.overleaf.com/docs`.
   The project is created in whichever account is logged in to that browser.
+  The zip travels inside the request, so a large one is rejected (see [Large reports](#large-reports)).
 - **Syncing a project**: Overleaf Git integration (`https://git.overleaf.com/<project-id>`).
   Git logs in as user `git` with the token stored by `overleaf login`.
 
 ## Experiment tracker template
 
-Every section has a numbered list, and each list gives its items IDs:
+The report opens with an executive summary: a bulleted list of the key findings, each pointing at the finding it summarises.
+Every other section has a numbered list, and each list gives its items IDs:
 
 | Environment   | IDs | Section                             |
 | ------------- | --- | ----------------------------------- |
@@ -176,7 +200,6 @@ Every section has a numbered list, and each list gives its items IDs:
 | `criteria`    | C1… | Evaluation                          |
 | `risks`       | R1… | Risks and limitations               |
 | `impacts`     | I1… | Expected impact                     |
-| `questions`   | Q1… | Questions and feedback              |
 | `findings`    | F1… | Results                             |
 
 Put `\label{hyp:foo}` on an item, and `\ref{hyp:foo}` elsewhere prints its ID (`H1`) as a link.
@@ -185,7 +208,7 @@ Other macros:
 - Preamble: `\version{}`, `\status{Draft | Proposed | In progress | Complete | Abandoned}`, and `\relatedlink{label}{url}` once per link.
   URLs need no escaping.
 - In items: `\lead{Rationale}`, which starts a labelled line such as "Rationale:" or "If H1 is supported:".
-  Also `\verdict{Supported | Partly supported | Inconclusive | Rejected | Pending}`, and `\raisedby{Name}` for the person who asked a question.
+  Also `\verdict{Supported | Partly supported | Inconclusive | Rejected | Pending}`.
 - `\guidance{}` for the grey notes under each heading, and `\placeholder{}` for text still to fill in.
   `\documentclass[final]{exptracker}` hides the guidance and lists each leftover placeholder as a warning in the log.
 

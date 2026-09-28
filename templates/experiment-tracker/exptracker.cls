@@ -187,11 +187,6 @@
 % \lead{Rationale}: starts a labelled paragraph inside an item.
 \newcommand\lead[1]{\par\textit{#1:}\enspace}
 
-% \raisedby{Name}: right-aligns who raised a question at the end of an item.
-\newcommand\raisedby[1]{%
-  \unskip\nobreak\hfil\penalty50\hskip1.5em\hbox{}\nobreak\hfil
-  \mbox{\small\color{et@muted}--- #1}{\parfillskip=0pt\finalhyphendemerits=0\par}}
-
 % Numbered lists whose items get IDs (H1, A2, ...). \ref prints the ID, so
 % later sections can point back at a hypothesis, assumption or finding.
 \newcommand\et@idlist[2]{%
@@ -206,7 +201,6 @@
 \et@idlist{criteria}{C}
 \et@idlist{risks}{R}
 \et@idlist{impacts}{I}
-\et@idlist{questions}{Q}
 \et@idlist{findings}{F}
 
 \setlist[itemize]{itemsep=0.2em, topsep=0.2em}

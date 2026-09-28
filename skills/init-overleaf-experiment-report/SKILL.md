@@ -40,6 +40,7 @@ Details given earlier in the conversation count too.
      Leave the placeholder wherever the user has said nothing.
    - Hypotheses: one `\item` per hypothesis, each with a `\label{hyp:<slug>}`.
      Point the other sections' `\ref{hyp:main}` at the real labels, and delete template items that stay unused.
+   - Executive summary: leave its placeholder until there are results, unless the user has already given key findings.
 6. **Build.**
    Run `overleaf build <name>`.
    If it fails, fix the errors it prints and build again until it succeeds.
@@ -51,7 +52,7 @@ Details given earlier in the conversation count too.
 ## Rules
 
 - Write only what the user said or what the sources you read say.
-  Never invent hypotheses, numbers, results, verdicts, citations or reviewer questions: leave a placeholder instead.
+  Never invent hypotheses, numbers, results, verdicts or citations: leave a placeholder instead.
   Keep the user's wording, tidying only grammar and LaTeX.
 - Keep every `\guidance{}` note.
   The `final` class option hides them once the report is ready.
@@ -66,8 +67,10 @@ Details given earlier in the conversation count too.
 
 ## Template reference
 
-Each section is a numbered list whose items get IDs, which `\ref` prints as links:
-`hypotheses` (H1…), `assumptions` (A1…), `approaches` (P1…), `evidence` (E1…), `criteria` (C1…, the Evaluation section), `risks` (R1…), `impacts` (I1…), `questions` (Q1…) and `findings` (F1…, the Results section).
+The report opens with an executive summary, a plain `itemize` list of key findings.
+Every other section is a numbered list whose items get IDs, which `\ref` prints as links:
+`hypotheses` (H1…), `assumptions` (A1…), `approaches` (P1…), `evidence` (E1…), `criteria` (C1…, the Evaluation section), `risks` (R1…), `impacts` (I1…) and `findings` (F1…, the Results section).
+A list split across subsections continues its numbering with `\begin{findings}[resume]`.
 
 Other macros:
 
@@ -75,7 +78,6 @@ Other macros:
 - `\version{}`, and `\relatedlink{label}{url}` once per link.
 - `\lead{Label}` starts a labelled line inside an item, e.g. `\lead{Rationale}`, `\lead{Alternatives considered}`, `\lead{If \ref{hyp:x} is supported}`, `\lead{Follow-up}`.
 - `\verdict{}`: Supported, Partly supported, Inconclusive, Rejected or Pending.
-- `\raisedby{Name}` ends a question with who asked it.
 
 The layout and macros are defined in `exptracker.cls` in the project directory.
 
@@ -87,10 +89,13 @@ Keep to the rules above, and rebuild with `overleaf build <name>` after every ch
 - **Figures**: put image files in `figures/` in the project, as PDF for plots and PNG otherwise.
   Include each in a `figure` environment next to the text that discusses it, with a `\caption` and a `\label{fig:<slug>}`, and refer to it with `\ref`.
   The whole project directory is uploaded to Overleaf, so keep plotting scripts and raw data outside it unless the user wants them in the report.
+  Many PNG figures can make the project too large for `overleaf create`; the upload skill then pushes them separately, so there is no need to shrink them.
 - **Tables**: `booktabs` is loaded, so use `\toprule`, `\midrule` and `\bottomrule`.
 - **Results**: one `findings` item per result.
   Start it with a `\verdict{}` and the `\ref` of the hypothesis it tests, then the result with its numbers and a pointer to the figure or table.
   Put next steps after `\lead{Follow-up}`.
   Choose a verdict only from what the results show, and ask the user if it is unclear.
+- **Executive summary**: once there are findings, give it one bullet per key finding, starting with a bold claim, then its headline number and the `\ref` of the finding (label findings items `\label{find:<slug>}`).
+  Keep it in step with the Results: when a finding's numbers or verdict change, update its bullet too.
 - **Status**: update `\status{}` and `\version{}` when the user says the experiment has moved on.
 - **Ready to share**: add the `final` class option, build, and list any "Unfilled placeholder" warnings from the build output.

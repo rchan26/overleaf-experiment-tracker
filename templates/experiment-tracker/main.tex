@@ -18,6 +18,15 @@
 \begin{document}
 \maketitle
 
+\section{Executive summary}
+\guidance{The key findings, for a reader who reads nothing else. Point each one at
+the result it summarises with \texttt{\textbackslash ref}.}
+
+\begin{itemize}
+  \item \placeholder{A key finding in a sentence or two, with its headline number,
+    e.g.\ ``doing X improves Y by Z (\ref{find:main})''.}
+\end{itemize}
+
 \section{Problem statement}
 \guidance{Briefly describe the problem and why it matters.}
 
@@ -88,20 +97,13 @@ thresholds.}
     \lead{If \ref{hyp:main} is rejected} \placeholder{What changes.}
 \end{impacts}
 
-\section{Questions and feedback}
-\guidance{Questions and comments from reviewers, with who raised them.}
-
-\begin{questions}
-  \item \placeholder{A question or comment.} \raisedby{Name}
-\end{questions}
-
 \section{Results}
 \guidance{What the experiments showed, whether each hypothesis held, and the
 follow-ups. Verdicts: Supported, Partly supported, Inconclusive, Rejected or
 Pending.}
 
 \begin{findings}
-  \item \verdict{Pending} \ref{hyp:main}: \placeholder{The result, with numbers
+  \item\label{find:main} \verdict{Pending} \ref{hyp:main}: \placeholder{The result, with numbers
     and a pointer to the figure or table that shows it.}
     \lead{Follow-up} \placeholder{What to do next.}
 \end{findings}
