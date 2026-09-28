@@ -1,6 +1,6 @@
 ---
 name: setup-overleaf-experiment-tracker
-description: Set up a clone of the overleaf-experiment-tracker repo on this machine. Puts the `overleaf` command on PATH, hides a nested clone from the outer git repository, installs TinyTeX if no TeX is found, installs the tracker's other Claude Code skills, and checks the Overleaf Git token, guiding the user to create one if it is missing. Use when the user wants to set up, install, update or check the overleaf-experiment-tracker tool or its Overleaf connection.
+description: Set up a clone of the overleaf-experiment-tracker repo on this machine. Puts the `overleaf` command on PATH, hides a nested clone from the outer git repository, installs TinyTeX if no TeX is found, installs the tracker's other Claude Code skills, and checks the Overleaf Git token, guiding the user to create one if it is missing. Use when the user wants to set up, install or update the overleaf-experiment-tracker tool or its Overleaf connection; to only check the setup, use check-overleaf-experiment-tracker.
 argument-hint: [path to the overleaf-experiment-tracker clone]
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(command -v *), Bash(readlink *), Bash(uname)
 ---
@@ -39,9 +39,10 @@ If given, the argument is the path to the clone.
    If `~/.local/bin` is not on `PATH`, ask whether to add `export PATH="$HOME/.local/bin:$PATH"` to the shell's startup file (`~/.zshrc` for zsh), and tell the user it takes effect in new terminals.
    Until then, run the command as `"$TOOL/bin/overleaf"`.
 5. **Install TeX.**
-   Run `overleaf doctor`.
-   If it prints `pdflatex` and `latexmk` versions, TeX is ready.
-   If it says no TeX was found, tell the user you are installing TinyTeX into `~/Library/TinyTeX`: a download of about 65 MB, about 250 MB installed, no admin rights needed. Then run:
+   Run `overleaf doctor`, which prints one line per check: a status (`ok`, `warn`, `fail` or `skip`), the check's name and a detail.
+   It exits non-zero when any check fails, so read its output either way.
+   If the `tex` line is `ok`, TeX is ready.
+   If it is `fail`, tell the user you are installing TinyTeX into `~/Library/TinyTeX`: a download of about 65 MB, about 250 MB installed, no admin rights needed. Then run:
 
    ```sh
    dl=$(mktemp -d) && mkdir "$dl/archive"
@@ -64,8 +65,8 @@ If given, the argument is the path to the clone.
    Skip any that are already there and identical.
    If an installed copy differs from the clone's version, ask before replacing it.
 7. **Check the Overleaf Git token.**
-   Run `overleaf doctor` and read its `token:` line.
-   If the token is missing, give the user these steps:
+   Run `overleaf doctor` and read its `token` line.
+   If it is `fail`, give the user these steps:
    1. Sign in to Overleaf, open Account settings, and generate a token under Git integration.
       Git integration needs a premium plan, which many institutional licences include.
    2. Run `overleaf login` in their own terminal, and paste the token when prompted.
@@ -75,13 +76,14 @@ If given, the argument is the path to the clone.
    Wait for the user to say they have done it, then run `overleaf doctor` again.
    If `overleaf login` reported that no credential helper saved the token, suggest `git config --global credential.helper osxkeychain`, and ask before running it.
 8. **Check Git access.**
-   Ask the user for the URL of any Overleaf project they own, and run `overleaf doctor <URL>`.
-   If it prints `git: can read`, Overleaf Git access works.
-   If git reports an authentication failure, the token is wrong or has expired (tokens last a year): ask the user to generate a new one and run `overleaf login` again.
+   `overleaf doctor` tests Git access with the first project under `projects/` that is linked to Overleaf.
+   If its `git` line is `skip`, there is none: ask the user for the URL of any Overleaf project they own, and run `overleaf doctor <URL>`.
+   If the `git` line is `ok`, Overleaf Git access works.
+   If it is `fail` with an authentication error, the token is wrong or has expired (tokens last a year): ask the user to generate a new one and run `overleaf login` again.
    If the user has no Overleaf project yet, skip this step: the first `overleaf create` makes one.
 9. **Report back.**
    List what you changed, what was already in place, and anything the user still has to do.
-   Point them at `/init-overleaf-experiment-report <project-name> [details]` for starting a report, and `"$TOOL/README.md"` for the full workflow.
+   Point them at `/init-overleaf-experiment-report <project-name> [details]` for starting a report, `/check-overleaf-experiment-tracker` for checking the setup later, and `"$TOOL/README.md"` for the full workflow.
 
 ## Rules
 

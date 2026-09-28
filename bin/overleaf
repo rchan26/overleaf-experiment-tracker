@@ -41,8 +41,9 @@ Overleaf:
   clone <project> <name>   Clone an Overleaf project to projects/<name>
   pull <dir>               Bring in edits made on Overleaf
   push <dir> [message]     Commit local changes and push them to Overleaf
-  doctor [project]         Check the TeX install, the stored token and, given a
-                           project, that Git access to it works
+  doctor [project]         Check the command link, nesting in another repository, TeX,
+                           the stored token and Git access (to <project>, or else to
+                           the first project linked to Overleaf)
 
 <dir> is a path, or the name of a project under projects/.
 <project> is an Overleaf project URL, its Git URL, or the bare project ID.
@@ -50,14 +51,18 @@ EOF
 }
 
 # Prefers TinyTeX, which may be installed without being on the shell's PATH,
-# and falls back to any TeX already on PATH.
+# and falls back to any TeX already on PATH. Fails if there is neither.
 tex_path() {
   local bins=("$HOME"/Library/TinyTeX/bin/*)
   if [[ -d "${bins[0]}" ]]; then
     export PATH="${bins[0]}:$PATH"
-  elif ! command -v latexmk >/dev/null; then
-    die "no TeX found; install TinyTeX (see $ROOT/README.md)"
+  else
+    command -v latexmk >/dev/null
   fi
+}
+
+need_tex() {
+  tex_path || die "no TeX found; install TinyTeX (see $ROOT/README.md)"
 }
 
 project_id() {
@@ -80,13 +85,13 @@ exclude_build() {
   done
 }
 
-# Accepts a path, or the name of a directory under projects/.
 # True when a git credential helper holds a token for Overleaf. Asks git, so
 # any helper counts; the output, which includes the token, is discarded.
 has_token() {
   printf 'protocol=https\nhost=%s\nusername=git\n\n' "$GIT_HOST" | git credential fill >/dev/null 2>&1
 }
 
+# Accepts a path, or the name of a directory under projects/.
 resolve_dir() {
   if [[ -d "$1" ]]; then
     (cd "$1" && pwd)
@@ -129,7 +134,7 @@ cmd_build() {
   dir=$(resolve_dir "${1:?usage: overleaf build <dir> [main.tex]}")
   [[ -f "$dir/$main" ]] || die "$dir/$main not found"
   local log="$dir/build/${main%.tex}.log"
-  tex_path
+  need_tex
   for attempt in $(seq 20); do
     if (cd "$dir" && latexmk -pdf $force -interaction=nonstopmode -halt-on-error \
       -file-line-error -outdir=build "$main" >/dev/null 2>&1); then
@@ -148,7 +153,7 @@ cmd_build() {
 cmd_watch() {
   local dir main="${2:-main.tex}"
   dir=$(resolve_dir "${1:?usage: overleaf watch <dir> [main.tex]}")
-  tex_path
+  need_tex
   cd "$dir"
   exec latexmk -pdf -pvc -view=none -interaction=nonstopmode -file-line-error -outdir=build "$main"
 }
@@ -235,20 +240,103 @@ cmd_push() {
   echo "Pushed $(git -C "$dir" rev-parse --short HEAD) to $(git -C "$dir" remote get-url origin)"
 }
 
+DOCTOR_FAILED=0
+
+# Prints one doctor result: a status (ok, warn, fail or skip), the name of the
+# check, and a detail.
+report() {
+  printf '%-4s  %-8s  %s\n' "$1" "$2" "$3"
+  [[ "$1" != fail ]] || DOCTOR_FAILED=1
+}
+
+# The Git URL of the first project under projects/ that is linked to Overleaf.
+first_linked_url() {
+  local dir url
+  for dir in "$PROJECTS"/*/; do
+    url=$(git -C "$dir" remote get-url origin 2>/dev/null) || continue
+    if [[ "$url" == *"$GIT_HOST"* ]]; then
+      echo "$url"
+      return 0
+    fi
+  done
+  return 1
+}
+
 cmd_doctor() {
-  tex_path
-  echo "pdflatex: $(pdflatex --version | sed -n 1p)"
-  echo "latexmk:  $(latexmk -v | sed -n '/Version/p' | sed -n 1p)"
-  if has_token; then
-    echo "token:    stored for git@$GIT_HOST"
+  local cmd target outer rel url err dir linked=0 unlinked=0
+  local link="$HOME/.local/bin/overleaf"
+
+  # The command on PATH should be a link to this clone.
+  cmd=$(command -v overleaf || true)
+  if [[ -L "$link" && ! -e "$link" ]]; then
+    report fail command "$link is a broken link to $(readlink "$link")"
+  elif [[ -z "$cmd" ]]; then
+    report warn command "not on PATH; link it with: ln -s $ROOT/bin/overleaf ~/.local/bin/overleaf"
   else
-    echo "token:    missing (run 'overleaf login')"
+    target=$(readlink -f "$cmd")
+    if [[ "$target" == "$ROOT/bin/overleaf" ]]; then
+      report ok command "$cmd -> this clone"
+    elif [[ -d "$(dirname "$target")/../templates" ]]; then
+      report warn command "$cmd runs another clone, $(cd "$(dirname "$target")/.." && pwd)"
+    else
+      report fail command "$cmd is a copy, not a link to a clone; replace it with a link to $ROOT/bin/overleaf"
+    fi
   fi
+
+  # A clone inside another repository must be ignored by it, not tracked.
+  if outer=$(git -C "$(dirname "$ROOT")" rev-parse --show-toplevel 2>/dev/null); then
+    rel="${ROOT#"$outer"/}"
+    if [[ -n "$(git -C "$outer" ls-files -- "$rel")" ]]; then
+      report fail nesting "$outer tracks $rel; untrack it with: git -C $outer rm -r --cached $rel"
+    elif git -C "$outer" check-ignore -q "$ROOT"; then
+      report ok nesting "inside $outer, which ignores it"
+    else
+      report fail nesting "inside $outer, which does not ignore it; add /$rel/ to $(git -C "$outer" rev-parse --path-format=absolute --git-path info/exclude)"
+    fi
+  else
+    report ok nesting "not inside another repository"
+  fi
+
+  if tex_path; then
+    report ok tex "$(pdflatex --version | sed -n 1p), latexmk $(latexmk -v | sed -nE 's/.*Version ([0-9.]+).*/\1/p' | sed -n 1p)"
+    command -v tlmgr >/dev/null || report warn tex "no tlmgr, so build cannot install missing packages"
+  else
+    report fail tex "no TeX found; install TinyTeX (see $ROOT/README.md)"
+  fi
+
+  if has_token; then
+    report ok token "stored for git@$GIT_HOST"
+  elif [[ -z "$(git config --get-all credential.helper)" ]]; then
+    report fail token "missing, and git has no credential helper; run: git config --global credential.helper osxkeychain, then overleaf login"
+  else
+    report fail token "missing; generate one under Git integration in Overleaf's Account settings, then run: overleaf login"
+  fi
+
+  # Reading a project checks both the token and that the plan includes Git.
   if [[ -n "${1:-}" ]]; then
-    local url
     url=$(remote_url "$1")
-    git ls-remote -q "$url" HEAD >/dev/null && echo "git:      can read $url"
+  else
+    url=$(first_linked_url || true)
   fi
+  if [[ -z "$url" ]]; then
+    report skip git "no project linked to Overleaf to test; pass a project URL"
+  elif err=$(git ls-remote -q "$url" HEAD 2>&1 >/dev/null); then
+    report ok git "can read $url"
+  else
+    report fail git "cannot read $url: ${err%%$'\n'*}"
+  fi
+
+  for dir in "$PROJECTS"/*/; do
+    [[ -d "$dir" ]] || continue
+    if [[ "$(git -C "$dir" remote get-url origin 2>/dev/null)" == *"$GIT_HOST"* ]]; then
+      linked=$((linked + 1))
+    else
+      unlinked=$((unlinked + 1))
+    fi
+  done
+  report ok projects "$linked linked to Overleaf, $unlinked local only"
+
+  ((DOCTOR_FAILED == 0))
 }
 
 case "${1:-}" in
