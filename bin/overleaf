@@ -6,7 +6,8 @@
 #     creates a project from a zip of a local directory, and
 #   - Git integration (https://git.overleaf.com/<project-id>) to pull and push
 #     once the project exists. It authenticates as user "git" with a token
-#     from Overleaf's Account settings, kept in the macOS keychain.
+#     from Overleaf's Account settings, kept by git's credential helper (the
+#     macOS keychain by default).
 set -euo pipefail
 
 # Resolve symlinks so the command also works when linked onto PATH.
@@ -34,7 +35,7 @@ Local:
   watch <dir> [main.tex]   Rebuild on every save
 
 Overleaf:
-  login                    Store your Overleaf Git token in the macOS keychain
+  login                    Store your Overleaf Git token with git's credential helper
   create <dir> [main.tex]  Open a browser tab that creates an Overleaf project from <dir>
   link <dir> <project>     Connect <dir> to an existing Overleaf project
   clone <project> <name>   Clone an Overleaf project to projects/<name>
@@ -80,6 +81,12 @@ exclude_build() {
 }
 
 # Accepts a path, or the name of a directory under projects/.
+# True when a git credential helper holds a token for Overleaf. Asks git, so
+# any helper counts; the output, which includes the token, is discarded.
+has_token() {
+  printf 'protocol=https\nhost=%s\nusername=git\n\n' "$GIT_HOST" | git credential fill >/dev/null 2>&1
+}
+
 resolve_dir() {
   if [[ -d "$1" ]]; then
     (cd "$1" && pwd)
@@ -156,6 +163,7 @@ cmd_login() {
   [[ "$token" == olp_* ]] || echo "overleaf: warning: Overleaf tokens usually start with olp_" >&2
   printf 'protocol=https\nhost=%s\nusername=git\npassword=%s\n\n' "$GIT_HOST" "$token" |
     git credential approve
+  has_token || die "no git credential helper saved the token; run 'git config --global credential.helper osxkeychain' and try again"
   echo "Stored for https://git@$GIT_HOST"
 }
 
@@ -231,8 +239,8 @@ cmd_doctor() {
   tex_path
   echo "pdflatex: $(pdflatex --version | sed -n 1p)"
   echo "latexmk:  $(latexmk -v | sed -n '/Version/p' | sed -n 1p)"
-  if security find-internet-password -s "$GIT_HOST" -a git >/dev/null 2>&1; then
-    echo "token:    stored in keychain for git@$GIT_HOST"
+  if has_token; then
+    echo "token:    stored for git@$GIT_HOST"
   else
     echo "token:    missing (run 'overleaf login')"
   fi

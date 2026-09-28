@@ -9,12 +9,14 @@ templates/experiment-tracker/   experiment tracking report
   main.tex                      the content: fill this in
   exptracker.cls                layout and macros
   references.bib
-skills/                         Claude Code skills (see "Claude Code skill")
+skills/                         Claude Code skills (see "Claude Code skills")
 projects/<name>/                one report per directory, each its own git
                                 clone of an Overleaf project (not tracked here)
 ```
 
 ## Setup
+
+With Claude Code, the `setup-overleaf-experiment-tracker` skill can do these steps for you: see [Claude Code skills](#claude-code-skills).
 
 1. **Put the command on your PATH**, from the repo root:
 
@@ -41,7 +43,7 @@ projects/<name>/                one report per directory, each its own git
    overleaf login
    ```
 
-   It prompts for the token without echoing it, and stores it in the macOS keychain for `git@git.overleaf.com`.
+   It prompts for the token without echoing it, and stores it for `git@git.overleaf.com` with git's credential helper (the macOS keychain by default).
    Tokens expire after a year, and you can hold at most 10.
 
 4. **Check**: `overleaf doctor <any project URL>`.
@@ -67,31 +69,41 @@ ln -s "$PWD/overleaf/bin/overleaf" ~/.local/bin/overleaf
 - Update the tool with `git -C overleaf pull`.
 - `git clean -fdx` in the outer repository leaves the nested clone alone, but a doubled force (`git clean -ffdx`) deletes it, along with any reports not yet pushed to Overleaf.
 
-### Claude Code skill
+### Claude Code skills
 
-`skills/init-overleaf-experiment-report/` is a [Claude Code](https://code.claude.com/docs/en/skills) skill that starts a report for you:
+`skills/` holds two [Claude Code](https://code.claude.com/docs/en/skills) skills:
 
-```
-/init-overleaf-experiment-report my-experiment <problem statement, hypotheses, links, ...>
-```
+- `setup-overleaf-experiment-tracker` does the setup above for you.
+  It links the command onto your PATH, hides a nested clone from the outer repository, installs TinyTeX if it finds no TeX, installs `init-overleaf-experiment-report`, and checks your Overleaf Git token.
+  It cannot store the token itself, so if there is none, it tells you how to create one and run `overleaf login`.
+  It is safe to run again, e.g. after pulling an update.
+- `init-overleaf-experiment-report` starts a report:
 
-It creates the project with `overleaf new`, fills in whatever details you give it, leaves placeholders for the rest, and builds the PDF.
-Then you can edit `main.tex` yourself, or keep asking Claude in the same session, e.g. to add plots or write up results.
-It never uploads to Overleaf unless you ask.
+  ```
+  /init-overleaf-experiment-report my-experiment <problem statement, hypotheses, links, ...>
+  ```
+
+  It creates the project with `overleaf new`, fills in whatever details you give it, leaves placeholders for the rest, and builds the PDF.
+  Then you can edit `main.tex` yourself, or keep asking Claude in the same session, e.g. to add plots or write up results.
+  It never uploads to Overleaf unless you ask.
 
 Claude Code looks for project skills in `.claude/skills/` at the root of the repository you run it in.
-To install the skill there, run the following from that root, with `TOOL` set to the path of this repo (e.g. `overleaf` when nested, `.` when working in this repo itself):
+Install the setup skill there by hand, and it installs the other skill next to itself.
+Run the following from that root, with `TOOL` set to the path of this repo (e.g. `overleaf` when nested, `.` when working in this repo itself):
 
 ```sh
 TOOL=overleaf
 mkdir -p .claude/skills
-cp -R "$TOOL/skills/init-overleaf-experiment-report" .claude/skills/
+cp -R "$TOOL/skills/setup-overleaf-experiment-tracker" .claude/skills/
 ```
 
-- Re-run the `cp` after pulling changes to the skill.
-  To stay in sync instead, symlink it with `ln -s "$(cd "$TOOL" && pwd)/skills/init-overleaf-experiment-report" .claude/skills/`.
+Then run `/setup-overleaf-experiment-tracker` in Claude Code.
+
+- Copies do not change when you pull this repo.
+  After pulling, re-run the `cp`, then the setup skill, which offers to update the other copy.
+- To stay in sync instead, symlink the setup skill with `ln -s "$(cd "$TOOL" && pwd)/skills/setup-overleaf-experiment-tracker" .claude/skills/`, and it symlinks the other skill too.
   A symlink points into your own clone, so only use one if `.claude/` is not committed.
-- To have the skill in every repository, copy or link it into `~/.claude/skills/` instead.
+- To have the skills in every repository, install them into `~/.claude/skills/` instead.
 
 ## Workflow
 
