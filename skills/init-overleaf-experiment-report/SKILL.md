@@ -46,7 +46,7 @@ Details given earlier in the conversation count too.
    Also fix any warnings it prints about undefined references or citations, which show as "??" in the PDF.
 7. **Report back.**
    Give the paths to `main.tex` and the PDF, and say which sections you filled and which still have placeholders.
-   Then say what the user can do next: edit `main.tex` themselves, ask you to add figures or write up results, or put the report on Overleaf with `overleaf create <name>` then `overleaf link <name> <project URL>`.
+   Then say what the user can do next: edit `main.tex` themselves, ask you to add figures or write up results, or put the report on Overleaf with `/upload-overleaf-experiment-report <name>`.
 
 ## Rules
 
@@ -60,7 +60,9 @@ Details given earlier in the conversation count too.
 - The template's Supporting evidence placeholder cites `placeholder2026`.
   Add a real reference to `references.bib` only when the user gives it, or it is in a source you read; never guess bibliographic details.
   If nothing is cited any more, delete the `\bibliographystyle` and `\bibliography` lines.
-- Do not run `overleaf create`, `overleaf link` or `overleaf push` unless the user asks, because they publish to Overleaf.
+- This skill works locally only.
+  Do not run `overleaf create`, `overleaf link` or `overleaf push` unless the user asks, because they publish to Overleaf.
+  If the user asks to upload the report, use the upload-overleaf-experiment-report skill.
 
 ## Template reference
 

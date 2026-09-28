@@ -73,7 +73,7 @@ ln -s "$PWD/overleaf/bin/overleaf" ~/.local/bin/overleaf
 
 ### Claude Code skills
 
-`skills/` holds three [Claude Code](https://code.claude.com/docs/en/skills) skills:
+`skills/` holds four [Claude Code](https://code.claude.com/docs/en/skills) skills:
 
 - `setup-overleaf-experiment-tracker` does the setup above for you.
   It links the command onto your PATH, hides a nested clone from the outer repository, installs TinyTeX if it finds no TeX, installs the other skills, and checks your Overleaf Git token.
@@ -91,7 +91,16 @@ ln -s "$PWD/overleaf/bin/overleaf" ~/.local/bin/overleaf
 
   It creates the project with `overleaf new`, fills in whatever details you give it, leaves placeholders for the rest, and builds the PDF.
   Then you can edit `main.tex` yourself, or keep asking Claude in the same session, e.g. to add plots or write up results.
-  It never uploads to Overleaf unless you ask.
+  It works locally only, and never uploads to Overleaf unless you ask.
+- `upload-overleaf-experiment-report` puts a local report on Overleaf:
+
+  ```
+  /upload-overleaf-experiment-report my-experiment
+  ```
+
+  It builds the report and checks your token, then runs `overleaf create`, which opens the new Overleaf project in your browser.
+  Once you paste the project's URL back into the chat, it runs `overleaf link` so that `pull` and `push` work.
+  If the report is already on Overleaf, it just gives you the URL.
 
 Claude Code looks for project skills in `.claude/skills/` at the root of the repository you run it in.
 Install the setup skill there by hand, and it installs the other skills next to itself.
@@ -122,6 +131,7 @@ overleaf watch my-experiment                # or rebuild on every save
 overleaf create my-experiment               # new Overleaf project, opens in the browser
 overleaf link my-experiment <project URL>   # connect the local copy to it
 
+overleaf status my-experiment               # on Overleaf? any unpushed changes?
 overleaf pull my-experiment                 # Overleaf -> local
 overleaf push my-experiment "add results"   # local -> Overleaf
 ```
@@ -136,6 +146,7 @@ Notes:
   `watch` does not, so run `build` once after adding a package.
 - `push` commits all local changes, rebases them on any edits made in the browser, and pushes.
   Resolve any rebase conflict with plain git in the project directory.
+- `create` refuses a directory that is already linked to Overleaf, so it cannot make a duplicate project.
 - Overleaf's git has one branch, and no tags, submodules or LFS.
   Renaming a file over git drops its Overleaf comments and tracked changes.
 - To match `build`, keep the Overleaf compiler at pdfLaTeX (Menu > Compiler).

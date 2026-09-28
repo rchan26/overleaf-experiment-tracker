@@ -39,6 +39,7 @@ Overleaf:
   create <dir> [main.tex]  Open a browser tab that creates an Overleaf project from <dir>
   link <dir> <project>     Connect <dir> to an existing Overleaf project
   clone <project> <name>   Clone an Overleaf project to projects/<name>
+  status <dir>             Say whether <dir> is on Overleaf, and list unpushed changes
   pull <dir>               Bring in edits made on Overleaf
   push <dir> [message]     Commit local changes and push them to Overleaf
   doctor [project]         Check the command link, nesting in another repository, TeX,
@@ -89,6 +90,17 @@ exclude_build() {
 # any helper counts; the output, which includes the token, is discarded.
 has_token() {
   printf 'protocol=https\nhost=%s\nusername=git\n\n' "$GIT_HOST" | git credential fill >/dev/null 2>&1
+}
+
+# Prints the web URL of the Overleaf project a directory is linked to, or fails
+# if it is not linked. Only the directory's own git repository counts, not the
+# repository it sits inside.
+overleaf_url() {
+  local url
+  [[ -e "$1/.git" ]] || return 1
+  url=$(git -C "$1" remote get-url origin 2>/dev/null) || return 1
+  [[ "$url" == *"$GIT_HOST"* ]] || return 1
+  echo "https://www.overleaf.com/project/$(project_id "$url")"
 }
 
 # Accepts a path, or the name of a directory under projects/.
@@ -173,9 +185,12 @@ cmd_login() {
 }
 
 cmd_create() {
-  local dir main="${2:-main.tex}" tmp payload
+  local dir main="${2:-main.tex}" url tmp payload
   dir=$(resolve_dir "${1:?usage: overleaf create <dir> [main.tex]}")
   [[ -f "$dir/$main" ]] || die "$dir/$main not found"
+  if url=$(overleaf_url "$dir"); then
+    die "$dir is already on Overleaf at $url"
+  fi
   tmp=$(mktemp -d)
   (cd "$dir" && zip -qr -X "$tmp/project.zip" . -x 'build/*' '.git/*' '*.DS_Store')
   payload=$(base64 <"$tmp/project.zip" | tr -d '\n')
@@ -219,6 +234,22 @@ cmd_clone() {
   git clone -q "$url" "$dest"
   exclude_build "$dest"
   echo "$dest"
+}
+
+cmd_status() {
+  local dir url origin changed ahead
+  dir=$(resolve_dir "${1:?usage: overleaf status <dir>}")
+  if url=$(overleaf_url "$dir"); then
+    changed=$(git -C "$dir" status --porcelain | wc -l | tr -d ' ')
+    ahead=$(git -C "$dir" rev-list --count '@{upstream}..HEAD' 2>/dev/null || echo 0)
+    echo "linked to $url"
+    echo "local changes: $changed uncommitted files, $ahead commits not pushed"
+  elif [[ -e "$dir/.git" ]]; then
+    origin=$(git -C "$dir" remote get-url origin 2>/dev/null || echo "no origin")
+    echo "not linked to Overleaf: $dir is a git repository with origin $origin"
+  else
+    echo "not linked to Overleaf: $dir"
+  fi
 }
 
 cmd_pull() {
@@ -340,7 +371,7 @@ cmd_doctor() {
 }
 
 case "${1:-}" in
-  new | build | watch | login | create | link | clone | pull | push | doctor)
+  new | build | watch | login | create | link | clone | status | pull | push | doctor)
     cmd="$1"
     shift
     "cmd_$cmd" "$@"
