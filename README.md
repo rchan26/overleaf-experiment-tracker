@@ -9,6 +9,7 @@ templates/experiment-tracker/   experiment tracking report
   main.tex                      the content: fill this in
   exptracker.cls                layout and macros
   references.bib
+skills/                         Claude Code skills (see "Claude Code skill")
 projects/<name>/                one report per directory, each its own git
                                 clone of an Overleaf project (not tracked here)
 ```
@@ -65,6 +66,32 @@ ln -s "$PWD/overleaf/bin/overleaf" ~/.local/bin/overleaf
 - `overleaf` commands take project names, so they work from anywhere, e.g. `overleaf build my-experiment` from the outer repository's root.
 - Update the tool with `git -C overleaf pull`.
 - `git clean -fdx` in the outer repository leaves the nested clone alone, but a doubled force (`git clean -ffdx`) deletes it, along with any reports not yet pushed to Overleaf.
+
+### Claude Code skill
+
+`skills/init-overleaf-experiment-report/` is a [Claude Code](https://code.claude.com/docs/en/skills) skill that starts a report for you:
+
+```
+/init-overleaf-experiment-report my-experiment <problem statement, hypotheses, links, ...>
+```
+
+It creates the project with `overleaf new`, fills in whatever details you give it, leaves placeholders for the rest, and builds the PDF.
+Then you can edit `main.tex` yourself, or keep asking Claude in the same session, e.g. to add plots or write up results.
+It never uploads to Overleaf unless you ask.
+
+Claude Code looks for project skills in `.claude/skills/` at the root of the repository you run it in.
+To install the skill there, run the following from that root, with `TOOL` set to the path of this repo (e.g. `overleaf` when nested, `.` when working in this repo itself):
+
+```sh
+TOOL=overleaf
+mkdir -p .claude/skills
+cp -R "$TOOL/skills/init-overleaf-experiment-report" .claude/skills/
+```
+
+- Re-run the `cp` after pulling changes to the skill.
+  To stay in sync instead, symlink it with `ln -s "$(cd "$TOOL" && pwd)/skills/init-overleaf-experiment-report" .claude/skills/`.
+  A symlink points into your own clone, so only use one if `.claude/` is not committed.
+- To have the skill in every repository, copy or link it into `~/.claude/skills/` instead.
 
 ## Workflow
 
