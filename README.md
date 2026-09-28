@@ -1,4 +1,4 @@
-# overleaf
+# overleaf-experiment-tracker
 
 Write LaTeX experiment reports locally, compile them with the same engine Overleaf uses (pdfLaTeX via latexmk), and create and sync the matching Overleaf projects from the command line.
 macOS only: it uses the keychain and `open`.
