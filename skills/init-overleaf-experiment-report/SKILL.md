@@ -57,6 +57,10 @@ Details given earlier in the conversation count too.
   Keep the user's wording, tidying only grammar and LaTeX.
 - Keep every `\guidance{}` note.
   The `final` class option hides them once the report is ready.
+- Write one sentence or statement per line, and never wrap a paragraph to a line width.
+  Inside an item, a caption or a `\guidance{}` note, put each following sentence on its own indented line.
+  Comments follow the same rule.
+  Keep to it in every later edit too, so a changed sentence is one changed line on Overleaf.
 - In prose, escape `_ % & # $` as `\_ \% \& \# \$`, and put code identifiers, variable names and paths in `\texttt{}`.
   URLs in `\relatedlink` need no escaping.
 - The template's Supporting evidence placeholder cites `placeholder2026`.

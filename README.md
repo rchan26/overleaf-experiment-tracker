@@ -214,4 +214,9 @@ Other macros:
 - `\guidance{}` for the grey notes under each heading, and `\placeholder{}` for text still to fill in.
   `\documentclass[final]{exptracker}` hides the guidance and lists each leftover placeholder as a warning in the log.
 
+Write one sentence or statement per line in `main.tex`, and do not wrap paragraphs.
+LaTeX joins the lines of a paragraph, so the PDF is the same, and a change to one sentence changes one line in `git diff` and in Overleaf's history.
+Inside an item, a caption or a `\guidance{}` note, indent each following sentence on its own line.
+Comments follow the same rule.
+
 To add another template, create a directory under `templates/` with a `main.tex`, and start reports from it with `overleaf new <name> <template>`.

@@ -1,8 +1,8 @@
 \documentclass{exptracker}
+% Write one sentence or statement per line, and do not wrap paragraphs.
 % Add the `final` option when the report is ready to share:
 %   \documentclass[final]{exptracker}
-% It hides the grey guidance notes and warns in the log about any
-% \placeholder left unfilled.
+% It hides the grey guidance notes and warns in the log about any \placeholder left unfilled.
 
 \title{Experiment title}
 \author{First Author \and Second Author}
@@ -10,11 +10,11 @@
 \version{0.1}
 % Draft, Proposed, In progress, Complete or Abandoned.
 \status{Draft}
-% The report's Overleaf project URL. Leave it empty until the report is on
-% Overleaf; /upload-overleaf-experiment-report fills it in.
+% The report's Overleaf project URL.
+% Leave it empty until the report is on Overleaf; /upload-overleaf-experiment-report fills it in.
 \overleafproject{}
-% One \relatedlink per link (GitHub issue or PR, W&B run, Azure ML job, eval
-% outputs). Paste URLs as they are: & % # _ need no escaping.
+% One \relatedlink per link (GitHub issue or PR, W&B run, Azure ML job, eval outputs).
+% Paste URLs as they are: & % # _ need no escaping.
 \relatedlink{GitHub issue}{https://github.com/}
 \relatedlink{W\&B project}{https://wandb.ai/}
 
@@ -22,38 +22,32 @@
 \maketitle
 
 \section{Executive summary}
-\guidance{The key findings, for a reader who reads nothing else. Point each one at
-the result it summarises with \texttt{\textbackslash ref}.}
+\guidance{The key findings, for a reader who reads nothing else.
+  Point each one at the result it summarises with \texttt{\textbackslash ref}.}
 
 \begin{itemize}
-  \item \placeholder{A key finding in a sentence or two, with its headline number,
-    e.g.\ ``doing X improves Y by Z (\ref{find:main})''.}
+  \item \placeholder{A key finding in a sentence or two, with its headline number, e.g.\ ``doing X improves Y by Z (\ref{find:main})''.}
 \end{itemize}
 
 \section{Problem statement}
 \guidance{Briefly describe the problem and why it matters.}
 
-\placeholder{A paragraph or two: what is wrong or missing, who it affects, and
-why it is worth an experiment.}
+\placeholder{A paragraph or two: what is wrong or missing, who it affects, and why it is worth an experiment.}
 
 \section{Hypotheses}
-\guidance{What you expect to happen. Give each hypothesis a
-\texttt{\textbackslash label} so later sections can cite it with
-\texttt{\textbackslash ref}, which prints its ID.}
+\guidance{What you expect to happen.
+  Give each hypothesis a \texttt{\textbackslash label} so later sections can cite it with \texttt{\textbackslash ref}, which prints its ID.}
 
 \begin{hypotheses}
-  \item\label{hyp:main} \placeholder{A testable statement, e.g.\ ``doing X
-    improves Y by at least Z on W''.}
-  \item\label{hyp:secondary} \placeholder{Another hypothesis, or delete this
-    item.}
+  \item\label{hyp:main} \placeholder{A testable statement, e.g.\ ``doing X improves Y by at least Z on W''.}
+  \item\label{hyp:secondary} \placeholder{Another hypothesis, or delete this item.}
 \end{hypotheses}
 
 \section{Assumptions}
 \guidance{Key assumptions underlying the hypotheses.}
 
 \begin{assumptions}
-  \item \placeholder{Something taken as given that, if false, would undermine
-    \ref{hyp:main}.}
+  \item \placeholder{Something taken as given that, if false, would undermine \ref{hyp:main}.}
 \end{assumptions}
 
 \section{Proposed approach and model choices}
@@ -62,26 +56,21 @@ why it is worth an experiment.}
 \begin{approaches}
   \item \placeholder{What will be done.}
     \lead{Rationale} \placeholder{Why this choice.}
-    \lead{Alternatives considered} \placeholder{What else was on the table and
-    why it was not chosen.}
+    \lead{Alternatives considered} \placeholder{What else was on the table and why it was not chosen.}
 \end{approaches}
 
 \section{Supporting evidence}
-\guidance{Why the hypotheses are reasonable: prior results, literature, pilot
-runs.}
+\guidance{Why the hypotheses are reasonable: prior results, literature, pilot runs.}
 
 \begin{evidence}
-  \item \placeholder{A prior result or paper that supports \ref{hyp:main},
-    e.g.\ \citet{placeholder2026}.}
+  \item \placeholder{A prior result or paper that supports \ref{hyp:main}, e.g.\ \citet{placeholder2026}.}
 \end{evidence}
 
 \section{Evaluation}
-\guidance{How success will be measured: metrics, baselines, data and
-thresholds.}
+\guidance{How success will be measured: metrics, baselines, data and thresholds.}
 
 \begin{criteria}
-  \item \placeholder{Metric, baseline and threshold that would support
-    \ref{hyp:main}.}
+  \item \placeholder{Metric, baseline and threshold that would support \ref{hyp:main}.}
 \end{criteria}
 
 \section{Risks and limitations}
@@ -101,13 +90,11 @@ thresholds.}
 \end{impacts}
 
 \section{Results}
-\guidance{What the experiments showed, whether each hypothesis held, and the
-follow-ups. Verdicts: Supported, Partly supported, Inconclusive, Rejected or
-Pending.}
+\guidance{What the experiments showed, whether each hypothesis held, and the follow-ups.
+  Verdicts: Supported, Partly supported, Inconclusive, Rejected or Pending.}
 
 \begin{findings}
-  \item\label{find:main} \verdict{Pending} \ref{hyp:main}: \placeholder{The result, with numbers
-    and a pointer to the figure or table that shows it.}
+  \item\label{find:main} \verdict{Pending} \ref{hyp:main}: \placeholder{The result, with numbers and a pointer to the figure or table that shows it.}
     \lead{Follow-up} \placeholder{What to do next.}
 \end{findings}
 
