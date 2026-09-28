@@ -2,7 +2,7 @@
 name: upload-overleaf-experiment-report
 description: Upload a local experiment report to Overleaf as a new Overleaf project, and link the local directory to it so `overleaf pull` and `overleaf push` keep the two in sync. Does nothing if the report is already on Overleaf. Use when the user wants to upload a report to Overleaf, put it on Overleaf, or create its Overleaf project.
 argument-hint: <project-name>
-allowed-tools: Read, AskUserQuestion, Bash(overleaf status *), Bash(overleaf build *), Bash(overleaf doctor), Bash(overleaf create *), Bash(overleaf link *), Bash(du *), Bash(mktemp *), Bash(rsync *)
+allowed-tools: Read, Edit, AskUserQuestion, Bash(overleaf status *), Bash(overleaf build *), Bash(overleaf doctor), Bash(overleaf create *), Bash(overleaf link *), Bash(du *), Bash(mktemp *), Bash(rsync *)
 ---
 
 Upload a local report, as made by `overleaf new` or `/init-overleaf-experiment-report`, to Overleaf as a new project, and link the local directory to it.
@@ -18,6 +18,7 @@ If it is missing, ask the user which project to upload.
    Run `overleaf status <name>`.
    - `linked to <URL>`: the report is already on Overleaf, so there is nothing to upload.
      Give the user the URL and stop.
+     If `main.tex` has an empty `\overleafproject{}`, offer to fill it in with that URL.
      If the output also lists local changes, say that `overleaf push <name>` would upload them, but do not run it.
    - `not linked to Overleaf: ... is a git repository with origin ...`: the directory is its own git repository but not an Overleaf project, and linking it would replace that repository's history.
      Stop and ask the user what they want.
@@ -66,8 +67,11 @@ If it is missing, ask the user which project to upload.
    On the text-only route it lists the files the copy left out, normally just `figures/`; tell the user that pushing them completes the upload.
    Otherwise, if it is not empty, show it to the user.
    Many differences suggest the URL belongs to a different project: check with the user before anything else.
-   Upload the local versions with `overleaf push <name> "<message>"` only if the user agrees.
-7. **Report back.**
+7. **Record the URL in the report.**
+   If `main.tex` has `\overleafproject{}`, fill in the project URL, and run `overleaf build <name>` to check it renders.
+   A report whose class file predates `\overleafproject` has neither the command nor the row, so leave it alone.
+   This edit is a local change, so upload it with any files from step 6: run `overleaf push <name> "<message>"` only if the user agrees.
+8. **Report back.**
    Give the Overleaf URL and the local directory.
    Explain how to keep them in sync: `overleaf pull <name>` brings in edits made on Overleaf, and `overleaf push <name> "<message>"` uploads local changes.
 

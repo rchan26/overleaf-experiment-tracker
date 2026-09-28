@@ -128,6 +128,21 @@
   \ifx\et@links\@empty\else\g@addto@macro\et@links{\newline}\fi
   \g@addto@macro\et@links{\href{#2}{#1}}}
 
+% \overleafproject{url}: the report's Overleaf project, shown as its own row.
+% Leave the URL empty until the report is on Overleaf, and the row says so. The
+% URL is read like \relatedlink's.
+\newif\ifet@overleaf
+\newcommand*\et@overleaf{}
+\newcommand\overleafproject{%
+  \begingroup
+  \@makeother\&\@makeother\%\@makeother\#\@makeother\_%
+  \@makeother\~\@makeother\^\@makeother\$%
+  \et@overleafproject}
+\newcommand\et@overleafproject[1]{%
+  \endgroup
+  \global\et@overleaftrue
+  \gdef\et@overleaf{#1}}
+
 \renewcommand\today{\number\day\space\ifcase\month\or
   January\or February\or March\or April\or May\or June\or July\or
   August\or September\or October\or November\or December\fi
@@ -161,6 +176,13 @@
   \et@addrow{Date}{\@date}%
   \ifx\et@version\@empty\else\et@addrow{Version}{\et@version}\fi
   \ifx\et@status\@empty\else\et@addrow{Status}{\et@tag{\et@status}}\fi
+  \ifet@overleaf
+    \ifx\et@overleaf\@empty
+      \et@addrow{Overleaf}{\textcolor{et@muted}{Not yet on Overleaf}}%
+    \else
+      \et@addrow{Overleaf}{\expandafter\url\expandafter{\et@overleaf}}%
+    \fi
+  \fi
   \ifx\et@links\@empty\else\et@addrow{Related links}{\et@links}\fi
   {\def\and{\unskip, }%
    \renewcommand\arraystretch{1.25}%

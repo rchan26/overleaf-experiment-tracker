@@ -36,6 +36,7 @@ Details given earlier in the conversation count too.
    - `\author`: `git config user.name`, plus anyone else the user names, joined with `\and`.
    - `\relatedlink`: one per link in the details, including any issue or PR you read.
      Delete the template's example links that you did not replace.
+   - `\overleafproject{}`: leave it empty; the upload skill fills it in once the report is on Overleaf.
    - Sections: put each detail in the section it belongs to, and replace the `\placeholder{}` it fills.
      Leave the placeholder wherever the user has said nothing.
    - Hypotheses: one `\item` per hypothesis, each with a `\label{hyp:<slug>}`.
@@ -76,6 +77,7 @@ Other macros:
 
 - `\status{}`: Draft, Proposed, In progress, Complete or Abandoned.
 - `\version{}`, and `\relatedlink{label}{url}` once per link.
+- `\overleafproject{url}`: the report's Overleaf project, shown as its own row; empty shows "Not yet on Overleaf".
 - `\lead{Label}` starts a labelled line inside an item, e.g. `\lead{Rationale}`, `\lead{Alternatives considered}`, `\lead{If \ref{hyp:x} is supported}`, `\lead{Follow-up}`.
 - `\verdict{}`: Supported, Partly supported, Inconclusive, Rejected or Pending.
 

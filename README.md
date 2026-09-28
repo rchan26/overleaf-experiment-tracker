@@ -99,7 +99,7 @@ ln -s "$PWD/overleaf/bin/overleaf" ~/.local/bin/overleaf
   ```
 
   It builds the report and checks your token, then runs `overleaf create`, which opens the new Overleaf project in your browser.
-  Once you paste the project's URL back into the chat, it runs `overleaf link` so that `pull` and `push` work.
+  Once you paste the project's URL back into the chat, it runs `overleaf link` so that `pull` and `push` work, and puts the URL in the report's `\overleafproject{}`.
   If the report is already on Overleaf, it just gives you the URL.
   If the report is too large to create in one go, it creates the project from the text files alone and pushes the figures once it is linked (see [Large reports](#large-reports)).
 
@@ -173,6 +173,7 @@ overleaf push my-experiment "add figures"
 
 `link` adopts the project's history, so the report's own files match it and only the figures are left to push.
 Ignore the `link` command that `create` prints, which names the temporary copy.
+Set `\overleafproject{<project URL>}` in `main.tex` before the push, so it goes up with the figures.
 
 ## How it talks to Overleaf
 
@@ -205,8 +206,9 @@ Every other section has a numbered list, and each list gives its items IDs:
 Put `\label{hyp:foo}` on an item, and `\ref{hyp:foo}` elsewhere prints its ID (`H1`) as a link.
 Other macros:
 
-- Preamble: `\version{}`, `\status{Draft | Proposed | In progress | Complete | Abandoned}`, and `\relatedlink{label}{url}` once per link.
+- Preamble: `\version{}`, `\status{Draft | Proposed | In progress | Complete | Abandoned}`, `\overleafproject{url}`, and `\relatedlink{label}{url}` once per link.
   URLs need no escaping.
+  `\overleafproject{}` starts empty, which shows "Not yet on Overleaf"; set the project URL once the report is uploaded.
 - In items: `\lead{Rationale}`, which starts a labelled line such as "Rationale:" or "If H1 is supported:".
   Also `\verdict{Supported | Partly supported | Inconclusive | Rejected | Pending}`.
 - `\guidance{}` for the grey notes under each heading, and `\placeholder{}` for text still to fill in.
