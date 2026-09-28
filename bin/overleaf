@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+# Local LaTeX builds and Overleaf sync for experiment reports.
+#
+# Overleaf has no general REST API, so this uses its two official routes:
+#   - the "Open in Overleaf" endpoint (https://www.overleaf.com/docs), which
+#     creates a project from a zip of a local directory, and
+#   - Git integration (https://git.overleaf.com/<project-id>) to pull and push
+#     once the project exists. It authenticates as user "git" with a token
+#     from Overleaf's Account settings, kept in the macOS keychain.
+set -euo pipefail
+
+# Resolve symlinks so the command also works when linked onto PATH.
+ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+TEMPLATES="$ROOT/templates"
+PROJECTS="$ROOT/projects"
+GIT_HOST="git.overleaf.com"
+
+# Fail fast instead of hanging on a password prompt when no token is stored.
+export GIT_TERMINAL_PROMPT=0
+
+die() {
+  echo "overleaf: $*" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'EOF'
+usage: overleaf <command> [args]
+
+Local:
+  new <name> [template]    Copy a template (default: experiment-tracker) to projects/<name>
+  build <dir> [main.tex]   Compile with latexmk + pdflatex into <dir>/build, installing
+                           missing TeX packages with tlmgr
+  watch <dir> [main.tex]   Rebuild on every save
+
+Overleaf:
+  login                    Store your Overleaf Git token in the macOS keychain
+  create <dir> [main.tex]  Open a browser tab that creates an Overleaf project from <dir>
+  link <dir> <project>     Connect <dir> to an existing Overleaf project
+  clone <project> <name>   Clone an Overleaf project to projects/<name>
+  pull <dir>               Bring in edits made on Overleaf
+  push <dir> [message]     Commit local changes and push them to Overleaf
+  doctor [project]         Check the TeX install, the stored token and, given a
+                           project, that Git access to it works
+
+<dir> is a path, or the name of a project under projects/.
+<project> is an Overleaf project URL, its Git URL, or the bare project ID.
+EOF
+}
+
+# Prefers TinyTeX, which may be installed without being on the shell's PATH,
+# and falls back to any TeX already on PATH.
+tex_path() {
+  local bins=("$HOME"/Library/TinyTeX/bin/*)
+  if [[ -d "${bins[0]}" ]]; then
+    export PATH="${bins[0]}:$PATH"
+  elif ! command -v latexmk >/dev/null; then
+    die "no TeX found; install TinyTeX (see $ROOT/README.md)"
+  fi
+}
+
+project_id() {
+  [[ "$1" =~ ([0-9a-f]{24}) ]] || die "no Overleaf project ID in '$1'"
+  echo "${BASH_REMATCH[1]}"
+}
+
+remote_url() {
+  local id
+  # Explicit: bash 3.2 does not carry `set -e` into command substitutions.
+  id=$(project_id "$1") || exit 1
+  echo "https://git@$GIT_HOST/$id"
+}
+
+# Keeps local build output out of the Overleaf project.
+exclude_build() {
+  local exclude="$1/.git/info/exclude" pattern
+  for pattern in build/ .DS_Store; do
+    grep -qxF "$pattern" "$exclude" 2>/dev/null || echo "$pattern" >>"$exclude"
+  done
+}
+
+# Accepts a path, or the name of a directory under projects/.
+resolve_dir() {
+  if [[ -d "$1" ]]; then
+    (cd "$1" && pwd)
+  elif [[ "$1" != */* && -d "$PROJECTS/$1" ]]; then
+    echo "$PROJECTS/$1"
+  else
+    die "no directory '$1', as a path or under $PROJECTS"
+  fi
+}
+
+# Installs the TeX Live package providing the first missing file named in the
+# LaTeX log or BibTeX log. Returns non-zero if nothing was installed.
+install_missing() {
+  local log="$1" blg="${1%.log}.blg" file="" pkg=""
+  [[ -f "$log" ]] && file=$(sed -nE "s/.*File \`([^']+)' not found.*/\1/p" "$log" | sed -n 1p)
+  [[ -z "$file" && -f "$blg" ]] && file=$(sed -nE "s/.*I couldn't open style file ([^ ]+).*/\1/p" "$blg" | sed -n 1p)
+  [[ -n "$file" ]] || return 1
+  pkg=$(tlmgr search --global --file "/$file" 2>/dev/null | sed -nE 's/^([A-Za-z0-9._-]+):$/\1/p' | sed -n 1p)
+  [[ -n "$pkg" ]] || {
+    echo "overleaf: no TeX Live package provides $file" >&2
+    return 1
+  }
+  echo "overleaf: installing TeX package '$pkg' for $file" >&2
+  tlmgr install "$pkg" >&2
+}
+
+cmd_new() {
+  local name="${1:?usage: overleaf new <name> [template]}" template="${2:-experiment-tracker}"
+  local dest="$PROJECTS/$name"
+  [[ -d "$TEMPLATES/$template" ]] || die "no template '$template' in $TEMPLATES"
+  [[ ! -e "$dest" ]] || die "$dest already exists"
+  mkdir -p "$PROJECTS"
+  cp -R "$TEMPLATES/$template" "$dest"
+  rm -rf "$dest/build"
+  echo "$dest"
+}
+
+cmd_build() {
+  local dir main="${2:-main.tex}" attempt force=""
+  dir=$(resolve_dir "${1:?usage: overleaf build <dir> [main.tex]}")
+  [[ -f "$dir/$main" ]] || die "$dir/$main not found"
+  local log="$dir/build/${main%.tex}.log"
+  tex_path
+  for attempt in $(seq 20); do
+    if (cd "$dir" && latexmk -pdf $force -interaction=nonstopmode -halt-on-error \
+      -file-line-error -outdir=build "$main" >/dev/null 2>&1); then
+      grep -E '^(LaTeX|Package|Class) [A-Za-z]* ?Warning' "$log" | sort -u || true
+      echo "$dir/build/${main%.tex}.pdf"
+      return 0
+    fi
+    install_missing "$log" || break
+    # latexmk will not rerun unchanged sources after a failed run unless forced.
+    force="-g"
+  done
+  grep -E -m 20 -A 3 '^(!|\./.*:[0-9]+:)' "$log" >&2 || true
+  die "build failed; full log: $log"
+}
+
+cmd_watch() {
+  local dir main="${2:-main.tex}"
+  dir=$(resolve_dir "${1:?usage: overleaf watch <dir> [main.tex]}")
+  tex_path
+  cd "$dir"
+  exec latexmk -pdf -pvc -view=none -interaction=nonstopmode -file-line-error -outdir=build "$main"
+}
+
+cmd_login() {
+  local token
+  [[ -t 0 ]] || die "run 'overleaf login' in an interactive terminal"
+  echo "Create a token at https://www.overleaf.com/user/settings (Git integration)."
+  read -rsp "Overleaf Git token: " token
+  echo
+  [[ -n "$token" ]] || die "no token given"
+  [[ "$token" == olp_* ]] || echo "overleaf: warning: Overleaf tokens usually start with olp_" >&2
+  printf 'protocol=https\nhost=%s\nusername=git\npassword=%s\n\n' "$GIT_HOST" "$token" |
+    git credential approve
+  echo "Stored for https://git@$GIT_HOST"
+}
+
+cmd_create() {
+  local dir main="${2:-main.tex}" tmp payload
+  dir=$(resolve_dir "${1:?usage: overleaf create <dir> [main.tex]}")
+  [[ -f "$dir/$main" ]] || die "$dir/$main not found"
+  tmp=$(mktemp -d)
+  (cd "$dir" && zip -qr -X "$tmp/project.zip" . -x 'build/*' '.git/*' '*.DS_Store')
+  payload=$(base64 <"$tmp/project.zip" | tr -d '\n')
+  cat >"$tmp/create.html" <<EOF
+<!doctype html>
+<meta charset="utf-8">
+<title>Creating Overleaf project</title>
+<form id="create" action="https://www.overleaf.com/docs" method="post">
+  <input type="hidden" name="snip_uri" value="data:application/zip;base64,$payload">
+  <input type="hidden" name="engine" value="pdflatex">
+  <input type="hidden" name="main_document" value="$main">
+</form>
+<script>document.getElementById("create").submit()</script>
+EOF
+  open "$tmp/create.html"
+  echo "Opened Overleaf in your browser. When the project has loaded, connect it with:"
+  echo "  overleaf link $dir <project URL>"
+}
+
+cmd_link() {
+  local dir url tmp
+  dir=$(resolve_dir "${1:?usage: overleaf link <dir> <project>}")
+  url=$(remote_url "${2:?usage: overleaf link <dir> <project>}")
+  [[ ! -e "$dir/.git" ]] || die "$dir is already a git repository"
+  tmp=$(mktemp -d)
+  git clone -q "$url" "$tmp/clone"
+  # Adopt Overleaf's history in place; any local differences show up as changes.
+  mv "$tmp/clone/.git" "$dir/.git"
+  rm -rf "$tmp"
+  exclude_build "$dir"
+  echo "Linked $dir to $url"
+  git -C "$dir" status --short
+}
+
+cmd_clone() {
+  local url name="${2:?usage: overleaf clone <project> <name>}"
+  url=$(remote_url "${1:?usage: overleaf clone <project> <name>}")
+  local dest="$PROJECTS/$name"
+  [[ ! -e "$dest" ]] || die "$dest already exists"
+  mkdir -p "$PROJECTS"
+  git clone -q "$url" "$dest"
+  exclude_build "$dest"
+  echo "$dest"
+}
+
+cmd_pull() {
+  local dir
+  dir=$(resolve_dir "${1:?usage: overleaf pull <dir>}")
+  git -C "$dir" pull -q --rebase --autostash
+  git -C "$dir" log -1 --format='%h %s (%cr)'
+}
+
+cmd_push() {
+  local dir msg="${2:-Update from local}"
+  dir=$(resolve_dir "${1:?usage: overleaf push <dir> [message]}")
+  [[ -d "$dir/.git" ]] || die "$dir is not linked to Overleaf; run 'overleaf link' first"
+  git -C "$dir" add -A
+  git -C "$dir" diff --cached --quiet || git -C "$dir" commit -q -m "$msg"
+  # Overleaf commits every browser edit, so replay local work on top of them.
+  git -C "$dir" pull -q --rebase
+  git -C "$dir" push -q
+  echo "Pushed $(git -C "$dir" rev-parse --short HEAD) to $(git -C "$dir" remote get-url origin)"
+}
+
+cmd_doctor() {
+  tex_path
+  echo "pdflatex: $(pdflatex --version | sed -n 1p)"
+  echo "latexmk:  $(latexmk -v | sed -n '/Version/p' | sed -n 1p)"
+  if security find-internet-password -s "$GIT_HOST" -a git >/dev/null 2>&1; then
+    echo "token:    stored in keychain for git@$GIT_HOST"
+  else
+    echo "token:    missing (run 'overleaf login')"
+  fi
+  if [[ -n "${1:-}" ]]; then
+    local url
+    url=$(remote_url "$1")
+    git ls-remote -q "$url" HEAD >/dev/null && echo "git:      can read $url"
+  fi
+}
+
+case "${1:-}" in
+  new | build | watch | login | create | link | clone | pull | push | doctor)
+    cmd="$1"
+    shift
+    "cmd_$cmd" "$@"
+    ;;
+  "" | -h | --help | help) usage ;;
+  *)
+    usage >&2
+    exit 1
+    ;;
+esac

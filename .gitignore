@@ -1,0 +1,7 @@
+# Reports: each one is its own git clone of an Overleaf project.
+/projects/*
+!/projects/README.md
+
+# Local LaTeX build output, including builds of the templates themselves.
+build/
+.DS_Store
