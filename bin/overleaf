@@ -29,7 +29,8 @@ usage() {
 usage: overleaf <command> [args]
 
 Local:
-  new <name> [template]    Copy a template (default: experiment-tracker) to projects/<name>
+  new <name> [template]    Copy a template to projects/<name>: experiment-tracker (the
+                           default), document, or another directory in templates/
   build <dir> [main.tex]   Compile with latexmk + pdflatex into <dir>/build, installing
                            missing TeX packages with tlmgr
   watch <dir> [main.tex]   Rebuild on every save
@@ -127,13 +128,18 @@ install_missing() {
     return 1
   }
   echo "overleaf: installing TeX package '$pkg' for $file" >&2
-  tlmgr install "$pkg" >&2
+  tlmgr install "$pkg" >&2 && return 0
+  # tlmgr refuses to install anything once the package repository has a newer
+  # tlmgr than this one, so update it and try again.
+  echo "overleaf: updating tlmgr, then retrying" >&2
+  tlmgr update --self >&2 && tlmgr install "$pkg" >&2
 }
 
 cmd_new() {
   local name="${1:?usage: overleaf new <name> [template]}" template="${2:-experiment-tracker}"
   local dest="$PROJECTS/$name"
-  [[ -d "$TEMPLATES/$template" ]] || die "no template '$template' in $TEMPLATES"
+  [[ -d "$TEMPLATES/$template" ]] ||
+    die "no template '$template'; the templates are: $(cd "$TEMPLATES" && ls -d -- */ | tr -d / | tr '\n' ' ')"
   [[ ! -e "$dest" ]] || die "$dest already exists"
   mkdir -p "$PROJECTS"
   cp -R "$TEMPLATES/$template" "$dest"

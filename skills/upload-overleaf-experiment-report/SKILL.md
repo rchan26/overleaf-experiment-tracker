@@ -1,11 +1,12 @@
 ---
 name: upload-overleaf-experiment-report
-description: Upload a local experiment report to Overleaf as a new Overleaf project, and link the local directory to it so `overleaf pull` and `overleaf push` keep the two in sync. Does nothing if the report is already on Overleaf. Use when the user wants to upload a report to Overleaf, put it on Overleaf, or create its Overleaf project.
+description: Upload a local experiment report or document to Overleaf as a new Overleaf project, and link the local directory to it so `overleaf pull` and `overleaf push` keep the two in sync. Does nothing if it is already on Overleaf. Use when the user wants to upload a report or document to Overleaf, put it on Overleaf, or create its Overleaf project.
 argument-hint: <project-name>
 allowed-tools: Read, Edit, AskUserQuestion, Bash(overleaf status *), Bash(overleaf build *), Bash(overleaf doctor), Bash(overleaf create *), Bash(overleaf link *), Bash(du *), Bash(mktemp *), Bash(rsync *)
 ---
 
-Upload a local report, as made by `overleaf new` or `/init-overleaf-experiment-report`, to Overleaf as a new project, and link the local directory to it.
+Upload a local report or document, as made by `overleaf new`, `/init-overleaf-experiment-report` or `/init-overleaf-document`, to Overleaf as a new project, and link the local directory to it.
+The steps below say "report" for either.
 
 Arguments: $ARGUMENTS
 
@@ -70,6 +71,7 @@ If it is missing, ask the user which project to upload.
 7. **Record the URL in the report.**
    If `main.tex` has `\overleafproject{}`, fill in the project URL, and run `overleaf build <name>` to check it renders.
    A report whose class file predates `\overleafproject` has neither the command nor the row, so leave it alone.
+   So does a document made from the `document` template.
    This edit is a local change, so upload it with any files from step 6: run `overleaf push <name> "<message>"` only if the user agrees.
 8. **Report back.**
    Give the Overleaf URL and the local directory.

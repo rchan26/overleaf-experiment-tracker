@@ -55,7 +55,7 @@ If given, the argument is the path to the clone.
    `--no-path` skips the admin-password step that adds TinyTeX to the shell `PATH`; `overleaf` finds TinyTeX without it.
    The download can take several minutes, so run it in the background if you can, and wait for it to finish.
 
-   After installing TinyTeX, build the template once, so the LaTeX packages it needs are installed now rather than on the first report: `overleaf build "$TOOL/templates/experiment-tracker"`, then delete the `build/` directory it creates there.
+   After installing TinyTeX, build each template once, so the LaTeX packages they need are installed now rather than on the first report: run `overleaf build "$TOOL/templates/<template>"` for each directory in `TOOL/templates/`, then delete the `build/` directory it creates there.
 6. **Install the other skills.**
    This skill sits in a skills directory: the parent of `${CLAUDE_SKILL_DIR}`.
    Install every other skill in `TOOL/skills/` into that directory, the same way this one was installed:
@@ -83,7 +83,7 @@ If given, the argument is the path to the clone.
    If the user has no Overleaf project yet, skip this step: the first `overleaf create` makes one.
 9. **Report back.**
    List what you changed, what was already in place, and anything the user still has to do.
-   Point them at `/init-overleaf-experiment-report <project-name> [details]` for starting a report, `/check-overleaf-experiment-tracker` for checking the setup later, and `"$TOOL/README.md"` for the full workflow.
+   Point them at `/init-overleaf-experiment-report <project-name> [details]` for starting an experiment report, `/init-overleaf-document <project-name> [details]` for any other document, `/check-overleaf-experiment-tracker` for checking the setup later, and `"$TOOL/README.md"` for the full workflow.
 
 ## Rules
 

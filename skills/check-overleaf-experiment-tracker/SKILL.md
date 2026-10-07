@@ -1,6 +1,6 @@
 ---
 name: check-overleaf-experiment-tracker
-description: Check that the overleaf-experiment-tracker tool is set up correctly, without changing anything. Verifies that the `overleaf` command links to the clone, that a clone nested in another repository is ignored by it, TeX, the Overleaf Git token and Git access, that the tracker's Claude Code skills are sound links or up-to-date copies, and that the template builds. Use when the user wants to check, verify, diagnose or troubleshoot the overleaf-experiment-tracker setup.
+description: Check that the overleaf-experiment-tracker tool is set up correctly, without changing anything. Verifies that the `overleaf` command links to the clone, that a clone nested in another repository is ignored by it, TeX, the Overleaf Git token and Git access, that the tracker's Claude Code skills are sound links or up-to-date copies, and that each template builds. Use when the user wants to check, verify, diagnose or troubleshoot the overleaf-experiment-tracker setup.
 argument-hint: [Overleaf project URL]
 allowed-tools: Read, Glob, Grep, Bash(command -v *), Bash(readlink *), Bash(uname)
 ---
@@ -41,9 +41,9 @@ If given, the argument is an Overleaf project URL to test Git access with.
    - `fail`: a broken link, e.g. after the clone or the outer repository moved.
    - `warn`: missing; a copy that differs from the clone (out of date, or edited); a link to a different clone; a link tracked by a repository, which gives everyone else a link into your clone; or a second copy in `~/.claude/skills/` or the clone's own `.claude/skills/`, which Claude Code would also list.
 4. **Check a build.**
-   Copy `TOOL/templates/experiment-tracker` into a new temporary directory, run `"$TOOL/bin/overleaf" build` on the copy, then delete the temporary directory.
-   This shows that TeX can build the template.
-   If LaTeX packages are missing, `build` installs them; tell the user if it did, since it is the only change this skill makes.
+   For each template in `TOOL/templates/`, copy it into a new temporary directory, run `"$TOOL/bin/overleaf" build` on the copy, then delete the temporary directory.
+   This shows that TeX can build every template.
+   If LaTeX packages are missing, `build` installs them, updating tlmgr first if the package repository requires it; tell the user if it did, since it is the only change this skill makes.
 5. **Report back.**
    Give a short checklist: each check, its result, and for each `warn` or `fail`, the fix.
    Say which fixes `/setup-overleaf-experiment-tracker` makes, and give the exact command for any that are one line.

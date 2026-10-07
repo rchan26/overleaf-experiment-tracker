@@ -5,10 +5,13 @@ macOS only: it uses the keychain and `open`.
 
 ```
 bin/overleaf                    the command (run it with no arguments for help)
-templates/experiment-tracker/   experiment tracking report
+templates/experiment-tracker/   experiment tracking report (the default)
   main.tex                      the content: fill this in
   exptracker.cls                layout and macros
   references.bib
+templates/document/             plain article for any other document
+  main.tex
+  biblio.bib
 skills/                         Claude Code skills (see "Claude Code skills")
 projects/<name>/                one report per directory, each its own git
                                 clone of an Overleaf project (not tracked here)
@@ -73,14 +76,14 @@ ln -s "$PWD/overleaf/bin/overleaf" ~/.local/bin/overleaf
 
 ### Claude Code skills
 
-`skills/` holds four [Claude Code](https://code.claude.com/docs/en/skills) skills:
+`skills/` holds five [Claude Code](https://code.claude.com/docs/en/skills) skills:
 
 - `setup-overleaf-experiment-tracker` does the setup above for you.
   It links the command onto your PATH, hides a nested clone from the outer repository, installs TinyTeX if it finds no TeX, installs the other skills, and checks your Overleaf Git token.
   It cannot store the token itself, so if there is none, it tells you how to create one and run `overleaf login`.
   It is safe to run again, e.g. after pulling an update.
 - `check-overleaf-experiment-tracker` checks the setup without changing anything, and says how to fix what it finds.
-  It runs `overleaf doctor` and a test build of the template.
+  It runs `overleaf doctor` and a test build of each template.
   It also checks that each skill is a working link to this clone or an up-to-date copy.
   In the nested layout it warns about a link that the outer repository tracks, or a skill that Claude Code would list twice.
 - `init-overleaf-experiment-report` starts a report:
@@ -92,7 +95,14 @@ ln -s "$PWD/overleaf/bin/overleaf" ~/.local/bin/overleaf
   It creates the project with `overleaf new`, fills in whatever details you give it, leaves placeholders for the rest, and builds the PDF.
   Then you can edit `main.tex` yourself, or keep asking Claude in the same session, e.g. to add plots or write up results.
   It works locally only, and never uploads to Overleaf unless you ask.
-- `upload-overleaf-experiment-report` puts a local report on Overleaf:
+- `init-overleaf-document` does the same for any other document, from the `document` template:
+
+  ```
+  /init-overleaf-document my-notes <title, authors, outline, ...>
+  ```
+
+  It fills in the title and authors, turns an outline into sections, and adds packages such as `graphicx` when you later ask for figures.
+- `upload-overleaf-experiment-report` puts a local report or document on Overleaf:
 
   ```
   /upload-overleaf-experiment-report my-experiment
@@ -138,13 +148,15 @@ overleaf push my-experiment "add results"   # local -> Overleaf
 ```
 
 Commands take the name of a project under `projects/` or a path to any directory.
+`overleaf new` copies the experiment tracker unless you name another template: `overleaf new my-notes document` starts a plain document (see [Document template](#document-template)).
 To work on an existing Overleaf project, run `overleaf clone <project URL> <name>` instead of `new`, `create` and `link`.
 
 Notes:
 
 - `build` puts everything in `<dir>/build/`, which is excluded from the Overleaf git repo.
   If a package is missing, `build` installs it with `tlmgr` and retries.
-  `watch` does not, so run `build` once after adding a package.
+  When the TeX Live package repository has moved on to a newer `tlmgr`, `build` updates `tlmgr` first.
+  `watch` does not install packages, so run `build` once after adding one.
 - `push` commits all local changes, rebases them on any edits made in the browser, and pushes.
   Resolve any rebase conflict with plain git in the project directory.
 - `create` refuses a directory that is already linked to Overleaf, so it cannot make a duplicate project.
@@ -218,5 +230,15 @@ Write one sentence or statement per line in `main.tex`, and do not wrap paragrap
 LaTeX joins the lines of a paragraph, so the PDF is the same, and a change to one sentence changes one line in `git diff` and in Overleaf's history.
 Inside an item, a caption or a `\guidance{}` note, indent each following sentence on its own line.
 Comments follow the same rule.
+
+## Document template
+
+`templates/document/` is a plain `article` for anything that is not an experiment report, such as notes, a write-up or a paper draft.
+It loads `hyperref`, `xcolor`, `multicol`, `geometry` (A4, with a 7 by 10 inch text area) and `blindtext` (filler text, for trying out a layout).
+The title, authors and date start empty, the body starts with an Introduction, and the bibliography comes from `biblio.bib` in the `apalike` style, on a new page.
+Until something is cited, the build warns that the bibliography is empty.
+Add `\usepackage{graphicx}` for figures and `\usepackage{booktabs}` for tables.
+
+## Adding a template
 
 To add another template, create a directory under `templates/` with a `main.tex`, and start reports from it with `overleaf new <name> <template>`.
