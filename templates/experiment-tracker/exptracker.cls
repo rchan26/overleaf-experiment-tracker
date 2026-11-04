@@ -210,19 +210,17 @@
 \newcommand\lead[1]{\par\textit{#1:}\enspace}
 
 % Numbered lists whose items get IDs (H1, A2, ...). \ref prints the ID, so
-% later sections can point back at a hypothesis, assumption or finding.
+% later sections can point back at a hypothesis, risk or finding.
 \newcommand\et@idlist[2]{%
   \newlist{#1}{enumerate}{1}%
   \setlist[#1]{label=#2\arabic*, ref=#2\arabic*,
     font=\sffamily\bfseries\color{et@accent}, widest=00, leftmargin=*,
     align=left, itemsep=0.5em, parsep=0.25em, topsep=0.3em}}
 \et@idlist{hypotheses}{H}
-\et@idlist{assumptions}{A}
 \et@idlist{approaches}{P}
 \et@idlist{evidence}{E}
 \et@idlist{criteria}{C}
 \et@idlist{risks}{R}
-\et@idlist{impacts}{I}
 \et@idlist{findings}{F}
 
 \setlist[itemize]{itemsep=0.2em, topsep=0.2em}

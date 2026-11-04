@@ -204,16 +204,14 @@ Overleaf has no general REST API.
 The report opens with an executive summary: a bulleted list of the key findings, each pointing at the finding it summarises.
 Every other section has a numbered list, and each list gives its items IDs:
 
-| Environment   | IDs | Section                             |
-| ------------- | --- | ----------------------------------- |
-| `hypotheses`  | H1… | Hypotheses                          |
-| `assumptions` | A1… | Assumptions                         |
-| `approaches`  | P1… | Proposed approach and model choices |
-| `evidence`    | E1… | Supporting evidence                 |
-| `criteria`    | C1… | Evaluation                          |
-| `risks`       | R1… | Risks and limitations               |
-| `impacts`     | I1… | Expected impact                     |
-| `findings`    | F1… | Results                             |
+| Environment  | IDs | Section                             |
+| ------------ | --- | ----------------------------------- |
+| `hypotheses` | H1… | Hypotheses                          |
+| `approaches` | P1… | Proposed approach and model choices |
+| `evidence`   | E1… | Supporting evidence                 |
+| `criteria`   | C1… | Evaluation                          |
+| `risks`      | R1… | Assumptions, risks and limitations  |
+| `findings`   | F1… | Results                             |
 
 Put `\label{hyp:foo}` on an item, and `\ref{hyp:foo}` elsewhere prints its ID (`H1`) as a link.
 Other macros:

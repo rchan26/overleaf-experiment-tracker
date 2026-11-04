@@ -74,7 +74,7 @@ Details given earlier in the conversation count too.
 
 The report opens with an executive summary, a plain `itemize` list of key findings.
 Every other section is a numbered list whose items get IDs, which `\ref` prints as links:
-`hypotheses` (H1…), `assumptions` (A1…), `approaches` (P1…), `evidence` (E1…), `criteria` (C1…, the Evaluation section), `risks` (R1…), `impacts` (I1…) and `findings` (F1…, the Results section).
+`hypotheses` (H1…), `approaches` (P1…), `evidence` (E1…), `criteria` (C1…, the Evaluation section), `risks` (R1…, the Assumptions, risks and limitations section) and `findings` (F1…, the Results section).
 A list split across subsections continues its numbering with `\begin{findings}[resume]`.
 
 Other macros:
